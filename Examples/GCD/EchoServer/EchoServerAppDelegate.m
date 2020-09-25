@@ -7,7 +7,7 @@
 #define ECHO_MSG     1
 #define WARNING_MSG  2
 
-#define READ_TIMEOUT 15.0
+#define READ_TIMEOUT 55.0
 #define READ_TIMEOUT_EXTENSION 10.0
 
 #define FORMAT(format, ...) [NSString stringWithFormat:(format), ##__VA_ARGS__]
@@ -70,15 +70,31 @@
 
 - (void)scrollToBottom
 {
-	NSScrollView *scrollView = [logView enclosingScrollView];
-	NSPoint newScrollOrigin;
-	
-	if ([[scrollView documentView] isFlipped])
-		newScrollOrigin = NSMakePoint(0.0F, NSMaxY([[scrollView documentView] frame]));
-	else
-		newScrollOrigin = NSMakePoint(0.0F, 0.0F);
-	
-	[[scrollView documentView] scrollPoint:newScrollOrigin];
+    dispatch_async(dispatch_get_main_queue(), ^{
+    @autoreleasepool {
+
+        NSScrollView *scrollView = [logView enclosingScrollView];
+        NSPoint newScrollOrigin;
+
+        if ([[scrollView documentView] isFlipped])
+            newScrollOrigin = NSMakePoint(0.0F, NSMaxY([[scrollView documentView] frame]));
+        else
+            newScrollOrigin = NSMakePoint(0.0F, 0.0F);
+
+        [[scrollView documentView] scrollPoint:newScrollOrigin];
+
+        }
+    });
+
+//  NSScrollView *scrollView = [logView enclosingScrollView];
+//	NSPoint newScrollOrigin;
+//
+//	if ([[scrollView documentView] isFlipped])
+//		newScrollOrigin = NSMakePoint(0.0F, NSMaxY([[scrollView documentView] frame]));
+//	else
+//		newScrollOrigin = NSMakePoint(0.0F, 0.0F);
+//
+//	[[scrollView documentView] scrollPoint:newScrollOrigin];
 }
 
 - (void)logError:(NSString *)msg
@@ -102,8 +118,16 @@
 	[attributes setObject:[NSColor purpleColor] forKey:NSForegroundColorAttributeName];
 	
 	NSAttributedString *as = [[NSAttributedString alloc] initWithString:paragraph attributes:attributes];
-	
-	[[logView textStorage] appendAttributedString:as];
+
+    dispatch_async(dispatch_get_main_queue(), ^{
+    @autoreleasepool {
+
+            [[logView textStorage] appendAttributedString:as];
+
+        }
+    });
+    
+//	[[logView textStorage] appendAttributedString:as];
 	[self scrollToBottom];
 }
 
@@ -195,43 +219,51 @@
 	NSData *welcomeData = [welcomeMsg dataUsingEncoding:NSUTF8StringEncoding];
 	
 	[newSocket writeData:welcomeData withTimeout:-1 tag:WELCOME_MSG];
-	
-	[newSocket readDataToData:[GCDAsyncSocket CRLFData] withTimeout:READ_TIMEOUT tag:0];
+
+//    [newSocket readDataToData:[GCDAsyncSocket LFData] withTimeout:READ_TIMEOUT tag:0];
+    [sock readDataToLength:3 withTimeout:READ_TIMEOUT tag:0];
+    [self logInfo:@"Read data."]; // for testing
 }
 
 - (void)socket:(GCDAsyncSocket *)sock didWriteDataWithTag:(long)tag
 {
 	// This method is executed on the socketQueue (not the main thread)
-	
-	if (tag == ECHO_MSG)
-	{
-		[sock readDataToData:[GCDAsyncSocket CRLFData] withTimeout:READ_TIMEOUT tag:0];
-	}
+	[self logInfo:@"In socket:didWriteDataWithTag!"]; // for testing
+
+//	if (tag == ECHO_MSG)
+//	{
+//        [sock readDataToData:[GCDAsyncSocket LFData] withTimeout:READ_TIMEOUT tag:0];
+        [sock readDataToLength:3 withTimeout:READ_TIMEOUT tag:0];
+        [self logInfo:@"Read data again."]; // for testing
+//	}
 }
 
 - (void)socket:(GCDAsyncSocket *)sock didReadData:(NSData *)data withTag:(long)tag
 {
 	// This method is executed on the socketQueue (not the main thread)
-	
+	[self logInfo:@"In socket:didReadData:withTag!"]; // for testing
+
 	dispatch_async(dispatch_get_main_queue(), ^{
-		@autoreleasepool {
+        @autoreleasepool {
 		
 			NSData *strData = [data subdataWithRange:NSMakeRange(0, [data length] - 2)];
 			NSString *msg = [[NSString alloc] initWithData:strData encoding:NSUTF8StringEncoding];
 			if (msg)
 			{
 				[self logMessage:msg];
+                [self logInfo:@"Should have shown the message now!"]; // for testing
 			}
 			else
 			{
 				[self logError:@"Error converting received data into UTF-8 String"];
 			}
 		
-		}
+        }
 	});
 	
 	// Echo message back to client
 	[sock writeData:data withTimeout:-1 tag:ECHO_MSG];
+    [self logInfo:@"Just wrote the data to client!"]; // for testing
 }
 
 /**
