@@ -220,8 +220,8 @@
 	
 	[newSocket writeData:welcomeData withTimeout:-1 tag:WELCOME_MSG];
 
-//    [newSocket readDataToData:[GCDAsyncSocket LFData] withTimeout:READ_TIMEOUT tag:0];
-    [sock readDataToLength:3 withTimeout:READ_TIMEOUT tag:0];
+    [newSocket readDataToData:[GCDAsyncSocket PData] withTimeout:READ_TIMEOUT tag:0];
+//    [sock readDataToLength:3 withTimeout:READ_TIMEOUT tag:0];
     [self logInfo:@"Read data."]; // for testing
 }
 
@@ -232,8 +232,8 @@
 
 //	if (tag == ECHO_MSG)
 //	{
-//        [sock readDataToData:[GCDAsyncSocket LFData] withTimeout:READ_TIMEOUT tag:0];
-        [sock readDataToLength:3 withTimeout:READ_TIMEOUT tag:0];
+        [sock readDataToData:[GCDAsyncSocket PData] withTimeout:READ_TIMEOUT tag:0];
+//        [sock readDataToLength:3 withTimeout:READ_TIMEOUT tag:0];
         [self logInfo:@"Read data again."]; // for testing
 //	}
 }
@@ -246,7 +246,7 @@
 	dispatch_async(dispatch_get_main_queue(), ^{
         @autoreleasepool {
 		
-			NSData *strData = [data subdataWithRange:NSMakeRange(0, [data length] - 2)];
+			NSData *strData = [data subdataWithRange:NSMakeRange(0, [data length] - 1)];
 			NSString *msg = [[NSString alloc] initWithData:strData encoding:NSUTF8StringEncoding];
 			if (msg)
 			{
